@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fixmsg — AI Message Improver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0a0a0a;
+      --surface:     #111111;
+      --surface2:    #181818;
+      --border:      #242424;
+      --border-hi:   #333333;
+      --text:        #e8e4dc;
+      --text-dim:    #6b6760;
+      --text-mid:    #9b9690;
+      --amber:       #f0a500;
+      --amber-dim:   #7a5300;
+      --amber-glow:  rgba(240, 165, 0, 0.08);
+      --green:       #3ddc84;
+      --red:         #ff5f5f;
+      --mono:        'IBM Plex Mono', 'Courier New', monospace;
+      --sans:        'IBM Plex Sans', sans-serif;
+      --radius:      3px;
+      --transition:  0.18s ease;
+    }
+
+    /* ── RESET ──────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+
+    /* ── BODY ───────────────────────────────────────────────────────────── */
+    body {
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      /* subtle scanline */
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.012) 2px,
+        rgba(255,255,255,0.012) 4px
+      );
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────────────────── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .logo {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+    .logo .slash { color: var(--amber); }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse-dot 2.5s ease infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ── MAIN ───────────────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 820px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+      animation: fade-up 0.5s ease both;
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── PAGE TITLE ─────────────────────────────────────────────────────── */
+    .page-title {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+    h1 strong { font-weight: 500; }
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-bottom: 44px;
+      font-family: var(--sans);
+    }
+
+    /* ── SECTION LABEL ──────────────────────────────────────────────────── */
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.62rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .field-label::before {
+      content: '';
+      width: 12px;
+      height: 1px;
+      background: var(--amber);
+    }
+
+    /* ── TEXTAREA ───────────────────────────────────────────────────────── */
+    .textarea-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      resize: vertical;
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      caret-color: var(--amber);
+    }
+    textarea::placeholder { color: var(--text-dim); }
+    textarea:focus {
+      border-color: var(--amber-dim);
+      box-shadow: 0 0 0 1px var(--amber-dim), inset 0 0 24px var(--amber-glow);
+    }
+
+    .char-count {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+    .char-count.warn { color: var(--red); }
+
+    /* ── CONTROLS ROW ───────────────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+
+    /* Custom select */
+    .select-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+    }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--amber);
+      font-size: 0.75rem;
+      pointer-events: none;
+    }
+    select {
+      width: 100%;
+      height: 100%;
+      min-height: 44px;
+      appearance: none;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 36px 0 14px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    select:focus { border-color: var(--amber-dim); }
+    select option { background: #1a1a1a; }
+
+    /* Submit button */
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 28px;
+      min-height: 44px;
+      background: var(--amber);
+      color: #0a0a0a;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      white-space: nowrap;
+    }
+    .submit-btn:hover:not(:disabled) {
+      background: #fbb726;
+      box-shadow: 0 0 24px rgba(240,165,0,0.3);
+      transform: translateY(-1px);
+    }
+    .submit-btn:active:not(:disabled) { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-arrow { transition: transform var(--transition); font-style: normal; }
+    .submit-btn:hover:not(:disabled) .btn-arrow { transform: translateX(4px); }
+
+    /* Spinner inside button */
+    .btn-spinner {
+      display: none;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #0a0a0a;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .is-loading .btn-arrow { display: none; }
+    .is-loading .btn-spinner { display: block; }
+
+    /* ── DIVIDER ────────────────────────────────────────────────────────── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .section-divider span {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── OUTPUT PANEL ───────────────────────────────────────────────────── */
+    .output-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.35s ease, transform 0.35s ease, border-color var(--transition);
+      pointer-events: none;
+    }
+    .output-panel.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      border-color: var(--border-hi);
+    }
+
+    .output-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .output-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tag {
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 3px 9px;
+      border-radius: 2px;
+      border: 1px solid currentColor;
+    }
+    .tag-tone {
+      color: var(--amber);
+      border-color: var(--amber-dim);
+      background: var(--amber-glow);
+    }
+    .tag-lang {
+      color: var(--text-mid);
+      border-color: var(--border-hi);
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--border-hi); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    .output-body {
+      padding: 20px 18px;
+      font-size: 0.88rem;
+      line-height: 1.75;
+      color: var(--text);
+      min-height: 80px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      /* typing cursor effect when streaming */
+    }
+
+    /* Typing cursor while loading */
+    .output-body.typing::after {
+      content: '▋';
+      color: var(--amber);
+      animation: blink 0.75s step-end infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ── ERROR ──────────────────────────────────────────────────────────── */
+    .error-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 95, 95, 0.08);
+      border: 1px solid rgba(255, 95, 95, 0.25);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 0.78rem;
+      color: var(--red);
+      margin-top: 14px;
+      animation: fade-up 0.25s ease both;
+    }
+    .error-bar.show { display: flex; }
+    .error-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+    /* ── FOOTER ─────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+    footer span { font-family: var(--sans); }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      header, main, footer { padding-left: 16px; padding-right: 16px; }
+      main { padding-top: 32px; }
+      .controls { flex-direction: column; }
+      .submit-btn { justify-content: center; padding: 12px 20px; }
+      .select-wrap { min-width: unset; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">fix<span class="slash">/</span>msg</div>
+  <div class="status-pill">
+    <span class="status-dot"></span>
+    <span>API READY</span>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+  <p class="page-title">AI Writing Assistant</p>
+  <h1>Write it rough.<br><strong>Send it right.</strong></h1>
+  <p class="subtitle">Paste any message — Turkish or English — and get a polished rewrite instantly.</p>
+
+  <!-- INPUT -->
+  <div class="field-label">Input message</div>
+  <div class="textarea-wrap">
+    <textarea
+      id="input-text"
+      placeholder="Type or paste your message here…&#10;&#10;e.g. hey can u send that file asap thanks"
+      maxlength="2000"
+    ></textarea>
+    <span class="char-count" id="char-count">0 / 2000</span>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="select-wrap">
+      <select id="tone-select" aria-label="Select tone">
+        <option value="professional">💼  Professional</option>
+        <option value="friendly">😊  Friendly</option>
+        <option value="polite">🙏  Polite</option>
+        <option value="shorter">✂️  Shorter</option>
+        <option value="more formal">🎩  More Formal</option>
+      </select>
+    </div>
+    <button class="submit-btn" id="submit-btn">
+      <span class="btn-arrow">→</span>
+      <span class="btn-spinner"></span>
+      Improve Message
+    </button>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-bar" id="error-bar">
+    <span class="error-icon">✕</span>
+    <span id="error-text">Something went wrong.</span>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="section-divider"><span>Result</span></div>
+
+  <div class="output-panel" id="output-panel">
+    <div class="output-toolbar">
+      <div class="output-meta">
+        <span class="tag tag-tone" id="tag-tone">—</span>
+        <span class="tag tag-lang" id="tag-lang">—</span>
+      </div>
+      <button class="copy-btn" id="copy-btn">
+        <span id="copy-icon">⎘</span>
+        <span id="copy-label">Copy</span>
+      </button>
+    </div>
+    <div class="output-body" id="output-body"></div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span>fixmsg · Powered by OpenAI</span>
+  <span>TR / EN supported</span>
+</footer>
+
+<!-- SCRIPT -->
+<script>
+  const API_URL = 'http://localhost:8000/fix';
+
+  /* ── Elements ── */
+  const inputEl    = document.getElementById('input-text');
+  const charCount  = document.getElementById('char-count');
+  const toneSelect = document.getElementById('tone-select');
+  const submitBtn  = document.getElementById('submit-btn');
+  const errorBar   = document.getElementById('error-bar');
+  const errorText  = document.getElementById('error-text');
+  const outputPanel= document.getElementById('output-panel');
+  const outputBody = document.getElementById('output-body');
+  const tagTone    = document.getElementById('tag-tone');
+  const tagLang    = document.getElementById('tag-lang');
+  const copyBtn    = document.getElementById('copy-btn');
+  const copyLabel  = document.getElementById('copy-label');
+  const copyIcon   = document.getElementById('copy-icon');
+
+  /* ── Char counter ── */
+  inputEl.addEventListener('input', () => {
+    const len = inputEl.value.length;
+    charCount.textContent = `${len} / 2000`;
+    charCount.classList.toggle('warn', len > 1800);
+  });
+
+  /* ── Submit ── */
+  submitBtn.addEventListener('click', async () => {
+    const text = inputEl.value.trim();
+    const tone = toneSelect.value;
+
+    hideError();
+
+    if (!text) { showError('Please enter a message before submitting.'); return; }
+
+    setLoading(true);
+    outputPanel.classList.remove('visible');
+    outputBody.classList.add('typing');
+    outputBody.textContent = '';
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, tone }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error (${res.status})`);
+      }
+
+      const data = await res.json();
+
+      outputBody.classList.remove('typing');
+      outputBody.textContent = data.improved;
+      tagTone.textContent    = capitalize(data.tone);
+      tagLang.textContent    = data.language;
+
+      outputPanel.classList.add('visible');
+      resetCopy();
+
+    } catch (err) {
+      outputBody.classList.remove('typing');
+      showError(err.message || 'Could not reach the server. Is the backend running?');
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  /* ── Copy ── */
+  copyBtn.addEventListener('click', async () => {
+    const txt = outputBody.textContent;
+    if (!txt) return;
+    try {
+      await navigator.clipboard.writeText(txt);
+      copyIcon.textContent  = '✓';
+      copyLabel.textContent = 'Copied!';
+      copyBtn.classList.add('copied');
+      setTimeout(resetCopy, 2200);
+    } catch {
+      showError('Could not copy — please select and copy manually.');
+    }
+  });
+
+  /* ── Allow Ctrl+Enter to submit ── */
+  inputEl.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitBtn.click();
+  });
+
+  /* ── Helpers ── */
+  function setLoading(on) {
+    submitBtn.disabled = on;
+    submitBtn.classList.toggle('is-loading', on);
+  }
+
+  function showError(msg) {
+    errorText.textContent = msg;
+    errorBar.classList.add('show');
+  }
+
+  function hideError() {
+    errorBar.classList.remove('show');
+  }
+
+  function resetCopy() {
+    copyIcon.textContent  = '⎘';
+    copyLabel.textContent = 'Copy';
+    copyBtn.classList.remove('copied');
+  }
+
+  function capitalize(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
+</script>
+</body>
+</html>
