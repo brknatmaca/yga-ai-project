@@ -32,17 +32,23 @@ Bilgisayarınızda **Python 3.8+** yüklü olduğundan emin olun.
 Proje klasörüne gidin ve gerekli kütüphaneleri yükleyin:
 
 ```bash
-pip install -r backend/requirements.txt```  
-
+pip install -r backend/requirements.txt
+```
 
 ### 3. API Yapılandırması
 Güvenlik nedeniyle .env dosyası paylaşılmamıştır. Uygulamanın çalışması için backend/ klasörü içinde bir .env dosyası oluşturun ve ücretsiz Groq API Key anahtarınızı ekleyin:
+
+```bash
 GROQ_API_KEY=gsk_your_api_key_here
+```
 
 ### 4. Sunucuyu Başlatma
 Terminalden backend klasörüne girin ve sunucuyu çalıştırın:
+```bash
 cd backend
 python -m uvicorn main:app --reload
+```
+
 Ardından frontend/index.html dosyasını tarayıcıda açarak uygulamayı kullanmaya başlayabilirsiniz.
 
 
