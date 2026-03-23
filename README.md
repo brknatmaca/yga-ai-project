@@ -30,8 +30,10 @@ Bilgisayarınızda **Python 3.8+** yüklü olduğundan emin olun.
 
 ### 2. Kurulum
 Proje klasörüne gidin ve gerekli kütüphaneleri yükleyin:
+
 ```bash
-pip install -r backend/requirements.txt
+pip install -r backend/requirements.txt```  
+
 
 ### 3. API Yapılandırması
 Güvenlik nedeniyle .env dosyası paylaşılmamıştır. Uygulamanın çalışması için backend/ klasörü içinde bir .env dosyası oluşturun ve ücretsiz Groq API Key anahtarınızı ekleyin:
