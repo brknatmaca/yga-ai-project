@@ -21,3 +21,25 @@ Sıradan bir "prompt" uygulamasının ötesine geçmek için şu teknik detaylar
 - `backend/main.py`: Uygulamanın beyni ve AI entegrasyonu.
 - `backend/requirements.txt`: Gerekli Python kütüphaneleri.
 - `frontend/index.html`: Kullanıcı arayüzü.
+
+## Hızlı Kurulum ve Çalıştırma
+Projeyi yerel bilgisayarınızda test etmek için aşağıdaki adımları izleyebilirsiniz:
+
+### 1. Gereksinimler
+Bilgisayarınızda **Python 3.8+** yüklü olduğundan emin olun.
+
+### 2. Kurulum
+Proje klasörüne gidin ve gerekli kütüphaneleri yükleyin:
+```bash
+pip install -r backend/requirements.txt
+
+### 3. API Yapılandırması
+Güvenlik nedeniyle .env dosyası paylaşılmamıştır. Uygulamanın çalışması için backend/ klasörü içinde bir .env dosyası oluşturun ve ücretsiz Groq API Key anahtarınızı ekleyin:
+GROQ_API_KEY=gsk_your_api_key_here
+
+### 4. Sunucuyu Başlatma
+Terminalden backend klasörüne girin ve sunucuyu çalıştırın:
+cd backend
+python -m uvicorn main:app --reload
+Ardından frontend/index.html dosyasını tarayıcıda açarak uygulamayı kullanmaya başlayabilirsiniz.
+
